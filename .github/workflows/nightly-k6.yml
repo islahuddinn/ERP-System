@@ -1,0 +1,31 @@
+name: Nightly load (k6)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  k6-gate:
+    name: k6 gate (login, stock, tenant switch)
+    runs-on: ubuntu-latest
+    env:
+      K6_BASE_URL: ${{ secrets.K6_BASE_URL }}
+      K6_EMAIL: ${{ secrets.K6_EMAIL }}
+      K6_PASSWORD: ${{ secrets.K6_PASSWORD }}
+      K6_TENANT_ID: ${{ secrets.K6_TENANT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Skip if load environment is not configured
+        if: env.K6_BASE_URL == ''
+        run: echo "K6_BASE_URL secret is empty — skipping nightly load until a dedicated environment is wired."
+
+      - name: Install k6
+        if: env.K6_BASE_URL != ''
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 gate
+        if: env.K6_BASE_URL != ''
+        run: k6 run load/k6/gate.js

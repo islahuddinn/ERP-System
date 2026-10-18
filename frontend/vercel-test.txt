@@ -1,0 +1,3 @@
+# Vercel Deployment Test
+This file is used to test Vercel deployments.
+Last updated: 2025-03-19

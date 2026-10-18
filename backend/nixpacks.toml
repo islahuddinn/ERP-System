@@ -1,0 +1,21 @@
+# =============================================================================
+# nixpacks.toml — Railway Build Configuration (Backend)
+# =============================================================================
+# Standardizing on pinned Prisma 7.4.0 from package.json
+# =============================================================================
+
+[phases.setup]
+nixPkgs = ["nodejs", "npm", "openssl"]
+
+[phases.install]
+cmds = ["npm install --include=dev"]
+
+[phases.build]
+cmds = [
+  "npx prisma generate --schema=prisma/master/schema.prisma",
+  "npx prisma generate --schema=prisma/tenant/schema.prisma",
+  "npx nest build -p tsconfig.build.json"
+]
+
+[start]
+cmd = "node dist/main.js"
