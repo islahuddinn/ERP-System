@@ -1,0 +1,270 @@
+// Master Database Schema
+// This database stores tenant metadata, subscriptions, and payments
+// Each tenant has their own separate database for business data
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../../node_modules/@prisma/master-client"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("MASTER_DATABASE_URL")
+  schemas  = ["public"]
+}
+
+model Tenant {
+  id                String   @id @default(uuid())
+
+  name              String
+  email             String   @unique
+
+  phone             String?
+  address           String?
+  requestId         String?
+  subdomain         String?  @unique
+  shortTenantId     String   @unique @map("short_tenant_id")
+
+  // CORE FIELD FOR MULTI-TENANCY
+  schemaName        String   @unique @map("schema_name")
+
+  status            TenantStatus
+
+  brandingName      String?  @map("branding_name")
+  brandingLogoUrl   String?  @map("branding_logo_url")
+  brandingLogoId    String?  @map("branding_logo_id")
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  suspensionReason  String?           @map("suspension_reason")
+  subscriptions     Subscription[]
+  tenantMigrations  TenantMigration[]
+
+  @@index([shortTenantId])
+  @@index([schemaName])
+
+  @@map("tenants")
+  @@schema("public")
+}
+
+model Subscription {
+  id              String            @id @default(uuid())
+  tenantId        String            @map("tenant_id")
+  type            SubscriptionType
+  startDate       DateTime          @map("start_date")
+  endDate         DateTime?         @map("end_date") // null for permanent
+  amount          Decimal           @db.Decimal(10, 2)
+  currency        String            @default("USD")
+  status          SubscriptionStatus @default(ACTIVE)
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  
+  // Relations
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payments        Payment[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([startDate])
+  @@map("subscriptions")
+  @@schema("public")
+}
+
+model Payment {
+  id              String            @id @default(uuid())
+  subscriptionId  String            @map("subscription_id")
+  amount          Decimal           @db.Decimal(10, 2)
+  currency        String            @default("USD")
+  paymentDate     DateTime          @map("payment_date")
+  paymentMethod   PaymentMethod
+  referenceNumber String?           @unique @map("reference_number") // Transaction ID, invoice number, etc.
+  status          PaymentStatus     @default(PENDING)
+  notes           String?
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  
+  // Relations
+  subscription    Subscription      @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@map("payments")
+  @@schema("public")
+}
+
+
+model TenantMigration {
+  id              String            @id @default(uuid())
+  tenantId        String            @map("tenant_id")
+  migrationName   String            @map("migration_name")
+  status          MigrationStatus   @default(PENDING)
+  startedAt       DateTime?         @map("started_at")
+  completedAt     DateTime?         @map("completed_at")
+  errorMessage    String?           @map("error_message")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  
+  // Relations
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("tenant_migrations")
+  @@schema("public")
+}
+
+
+model SuperAdminUser {
+  id              String            @id @default(uuid())
+  name            String
+  email           String            @unique
+  password        String            @map("password")
+  role            String            @default("SUPER_ADMIN")
+  isActive        Boolean           @default(true) @map("is_active")
+  lastLoginAt     DateTime?         @map("last_login_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  auditLogs       SuperAdminAuditLog[]
+
+  @@index([email])
+  @@index([isActive])
+  @@map("super_admin_users")
+  @@schema("public")
+}
+
+
+model Settings {
+  id            String   @id @default(uuid())
+  tenantId      String   @unique @map("tenant_id")
+  accountName   String?  @map("account_name")
+  companyName   String?  @map("company_name")
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  postalCode    String?  @map("postal_code")
+  country       String?
+  timezone      String   @default("UTC")
+  currency      String   @default("PKR")
+  language      String   @default("en")
+  settings      Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("settings")
+  @@schema("public")
+}
+
+
+model SuperAdminAuditLog {
+  id         String @id @default(uuid())
+
+  actorId    String?
+  actor      SuperAdminUser? @relation(fields: [actorId], references: [id])
+
+  action     SuperAdminAuditAction
+  entityType SuperAdminAuditEntityType
+  entityId   String
+
+  changes    Json?
+  metadata   Json?
+
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@map("super-admin-audit-logs")
+  @@schema("public")
+}
+
+
+enum SuperAdminAuditAction {
+  CREATED
+  UPDATED
+  DELETED
+  SUSPENDED
+
+  @@schema("public")
+}
+
+enum SuperAdminAuditEntityType {
+  TENANT
+  SUBSCRIPTION
+  PAYMENT
+  USER
+
+  @@schema("public")
+}
+
+// Enums
+enum SubscriptionType {
+  MONTHLY
+  PERMANENT
+  YEARLY
+  TRIAL
+  QUARTERLY
+  ANNUALLY
+
+  @@schema("public")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  SUSPENDED
+  PENDING
+
+  @@schema("public")
+}
+
+enum PaymentMethod {
+  STRIPE
+  BANK_TRANSFER
+  CASH
+  CHEQUE
+  PAYPAL
+  OTHER
+
+  @@schema("public")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+
+  @@schema("public")
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+
+  @@schema("public")
+}
+
+enum TenantType {
+  SHARED
+  DEDICATED
+
+  @@schema("public")
+}
+
+enum MigrationStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+
+  @@schema("public")
+}

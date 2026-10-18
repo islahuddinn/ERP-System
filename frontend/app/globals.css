@@ -1,0 +1,405 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 4.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 142 76% 36%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 142 76% 36%;
+        --radius: 0.75rem;
+    }
+
+    .light {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96%;
+        --secondary-foreground: 222.2 84% 4.9%;
+        --muted: 210 40% 96%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96%;
+        --accent-foreground: 222.2 84% 4.9%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    html {
+        @apply overflow-x-hidden bg-gray-50;
+    }
+
+    body {
+        @apply min-h-dvh overflow-x-hidden bg-gray-50 text-foreground;
+    }
+
+    /* Recharts SVG layers capture wheel events and block page scroll — pass wheel through. */
+    .recharts-wrapper,
+    .recharts-surface {
+        pointer-events: none;
+    }
+
+    .recharts-tooltip-wrapper {
+        pointer-events: auto;
+    }
+}
+
+@layer components {
+    .glass-card {
+        @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl shadow-2xl;
+    }
+
+    .glass-card-hover {
+        @apply hover:bg-white/15 hover:border-white/30 transition-all duration-300;
+    }
+
+    .tech-glow {
+        @apply relative before:absolute before:inset-0 before:bg-gradient-to-r before:from-green-400/20 before:to-blue-400/20 before:rounded-2xl before:blur-xl before:-z-10;
+    }
+
+    .gradient-text {
+        @apply bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent;
+    }
+
+    .dashboard-grid {
+        @apply grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4;
+    }
+
+    .stat-card {
+        @apply glass-card glass-card-hover p-6 relative overflow-hidden;
+    }
+
+    .stat-card .icon-container {
+        @apply flex items-center justify-center;
+    }
+
+    .stat-card .icon-container svg {
+        @apply flex-shrink-0;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #10b981, #3b82f6);
+        border-radius: 2px 2px 0 0;
+    }
+
+    .scrollbar-hide {
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        -ms-overflow-style: none;
+        /* IE and Edge */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+
+    .scrollbar-visible {
+        /* For Firefox */
+        scrollbar-width: thin;
+        scrollbar-color: rgba(16, 185, 129, 0.5) rgba(0, 0, 0, 0.05);
+    }
+
+    .scrollbar-visible::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    .scrollbar-visible::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 10px;
+        margin: 8px 0;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .scrollbar-visible::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, 
+            rgba(16, 185, 129, 0.4) 0%, 
+            rgba(5, 150, 105, 0.5) 50%,
+            rgba(16, 185, 129, 0.4) 100%);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+    }
+
+    .scrollbar-visible::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, 
+            rgba(16, 185, 129, 0.6) 0%, 
+            rgba(5, 150, 105, 0.7) 50%,
+            rgba(16, 185, 129, 0.6) 100%);
+        background-clip: padding-box;
+        border: 2px solid transparent;
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.2);
+        transform: scaleX(1.1);
+    }
+
+    .scrollbar-visible::-webkit-scrollbar-thumb:active {
+        background: linear-gradient(180deg, 
+            rgba(16, 185, 129, 0.8) 0%, 
+            rgba(5, 150, 105, 0.9) 50%,
+            rgba(16, 185, 129, 0.8) 100%);
+        background-clip: padding-box;
+        border: 2px solid transparent;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Factory Light Theme Utilities */
+    .factory-light-card {
+        @apply bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
+    }
+
+    .factory-light-card-hover {
+        @apply hover:border-gray-300 hover:shadow-md;
+    }
+
+    .factory-stat-card {
+        @apply bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-6 relative overflow-hidden;
+    }
+
+    .factory-stat-card:hover {
+        @apply shadow-lg transform -translate-y-1 border-gray-300;
+    }
+
+    .factory-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #10b981, #059669);
+        border-radius: 0.75rem 0.75rem 0 0;
+        opacity: 0.9;
+    }
+
+    .factory-section {
+        @apply w-full min-w-0 bg-gray-50;
+    }
+
+    .dashboard-stat-grid {
+        @apply grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 items-stretch;
+    }
+
+    .dashboard-stat-grid > a,
+    .dashboard-stat-grid > div {
+        @apply h-full min-w-0;
+    }
+
+    .factory-page-container {
+        @apply max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden px-3 sm:px-6 lg:px-8 py-4 sm:py-8;
+    }
+
+    .page-header-row {
+        @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between min-w-0;
+    }
+
+    .page-actions-row {
+        @apply flex flex-col-reverse sm:flex-row sm:justify-end gap-3 w-full sm:w-auto;
+    }
+
+    .page-actions-row > button,
+    .page-actions-row > a {
+        @apply w-full sm:w-auto;
+    }
+
+    .factory-heading {
+        @apply text-3xl font-bold text-gray-900;
+    }
+
+    .factory-subheading {
+        @apply text-gray-600 mt-2;
+    }
+
+    .factory-text-primary {
+        @apply text-gray-900;
+    }
+
+    .factory-text-secondary {
+        @apply text-gray-600;
+    }
+
+    .factory-text-muted {
+        @apply text-gray-500;
+    }
+
+    .factory-border {
+        @apply border-gray-200;
+    }
+
+    .factory-input {
+        @apply bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-green-500 focus:ring-green-500;
+    }
+
+    .factory-button-primary {
+        @apply bg-green-600 hover:bg-green-700 text-white;
+    }
+
+    .factory-button-secondary {
+        @apply bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300;
+    }
+}
+
+@keyframes loading-bar {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-loading-bar {
+    animation: loading-bar 1.8s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+    animation: spin 1.5s linear infinite;
+}
+
+.pos-theme input,
+.pos-theme textarea,
+.pos-theme select {
+    @apply bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border border-emerald-200 text-slate-900 placeholder:text-slate-600 shadow-inner rounded-xl;
+}
+
+.pos-theme input:focus,
+.pos-theme textarea:focus,
+.pos-theme select:focus {
+    @apply border-emerald-400 ring-2 ring-emerald-200 outline-none;
+}
+
+.pos-theme [role="combobox"] {
+    @apply bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border border-emerald-200 text-slate-900 shadow-inner rounded-xl placeholder:text-slate-600;
+}
+
+.pos-theme [role="combobox"]:focus {
+    @apply border-emerald-400 ring-2 ring-emerald-200 outline-none;
+}
+
+.radix-select-content {
+    @apply bg-white border border-gray-200 shadow-lg rounded-md;
+}
+
+.radix-select-item {
+    @apply rounded-sm text-gray-900 data-[state=checked]:bg-blue-50 data-[state=checked]:text-blue-900 hover:bg-gray-50;
+}
+
+.pos-input {
+    @apply bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border border-emerald-200 text-slate-900 placeholder:text-slate-600 shadow-inner rounded-xl;
+}
+
+.pos-input:focus {
+    @apply border-emerald-400 ring-2 ring-emerald-200 outline-none;
+}
+/* ── Hierarchy org-chart (shared: Sites → Tree tab, Departments → Tree tab) ─── */
+.oc-tree { display: flex; flex-direction: column; gap: 2.5rem; width: max-content; min-width: 100%; }
+.oc-tree ul { display: flex; position: relative; justify-content: center; list-style: none; margin: 0; padding: 24px 0 0 0; }
+.oc-tree > ul { padding-top: 0; }
+.oc-tree li { position: relative; text-align: center; padding: 24px 14px 0; }
+/* horizontal + down connectors between a node and its children */
+.oc-tree li::before, .oc-tree li::after {
+  content: ''; position: absolute; top: 0; right: 50%;
+  width: 50%; height: 24px; border-top: 2px solid #cbd5e1;
+}
+.oc-tree li::after { right: auto; left: 50%; border-left: 2px solid #cbd5e1; }
+.oc-tree li:only-child::before, .oc-tree li:only-child::after { display: none; }
+.oc-tree li:only-child { padding-top: 0; }
+.oc-tree li:first-child::before, .oc-tree li:last-child::after { border: 0 none; }
+.oc-tree li:last-child::before { border-right: 2px solid #cbd5e1; border-radius: 0 6px 0 0; }
+.oc-tree li:first-child::after { border-radius: 6px 0 0 0; }
+/* vertical line dropping from a parent down to its children's connector bar */
+.oc-tree ul ul::before {
+  content: ''; position: absolute; top: 0; left: 50%;
+  width: 0; height: 24px; border-left: 2px solid #cbd5e1;
+}
+.oc-node { display: inline-block; }
+
+/* ── Number inputs: hide spinner arrows (manual entry only) ─────────────────── */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinner,
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ── Dashboard chart palette ──────────────────────────────────────────────────
+   Categorical slots are assigned in fixed order (1..N) and never cycled or
+   re-assigned by rank, so a series keeps its colour when filters change.
+   Both the light and dark step sets were checked with the palette validator
+   (lightness band, chroma floor, CVD separation, normal-vision floor): PASS.
+   Slots 3 and 4 sit under 3:1 against the surface, so every chart using them
+   ships visible labels — counts in the legend and values on the bars. */
+:root {
+  --erp-chart-grid: #e1e0d9;
+  --erp-chart-axis: #c3c2b7;
+  --erp-ink-secondary: #52514e;
+  --erp-ink-muted: #898781;
+
+  --erp-series-1: #2a78d6; /* blue    */
+  --erp-series-2: #eb6834; /* orange  */
+  --erp-series-3: #1baf7a; /* aqua    */
+  --erp-series-4: #eda100; /* yellow  */
+  --erp-series-5: #e87ba4; /* magenta */
+  --erp-series-6: #4a3aa7; /* violet  */
+
+  /* Reserved for real health states only — never reused as a chart series. */
+  --erp-status-good: #0ca30c;
+  --erp-status-warning: #fab219;
+  --erp-status-critical: #d03b3b;
+}
+
+.dark {
+  --erp-chart-grid: #2c2c2a;
+  --erp-chart-axis: #383835;
+  --erp-ink-secondary: #c3c2b7;
+  --erp-ink-muted: #898781;
+
+  --erp-series-1: #3987e5;
+  --erp-series-2: #d95926;
+  --erp-series-3: #199e70;
+  --erp-series-4: #c98500;
+  --erp-series-5: #d55181;
+  --erp-series-6: #9085e9;
+}

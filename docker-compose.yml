@@ -1,0 +1,107 @@
+# =============================================================================
+# Production-Grade Docker Compose
+# Factory Distribution System — Raw Material Supply Chain Management
+# =============================================================================
+# Usage:
+#   1. Copy .env.example to .env and fill in all values
+#   2. Run: docker-compose up -d
+#   3. Monitor: docker-compose logs -f
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. PostgreSQL Database
+  #    - Internal only (no host port exposure in production)
+  #    - Persistent data volume
+  #    - Initialization scripts for schema & master DB
+  #    - Healthcheck ensures backend waits for a ready DB
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: inventory_db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/prisma/init_db.sql:/docker-entrypoint-initdb.d/01_init_db.sql:ro
+    # ⚠️ Production: Remove or comment out the ports block below.
+    # Only expose DB port for local debugging. Never expose in production.
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - inventory_network
+
+  # ---------------------------------------------------------------------------
+  # 2. Backend API (NestJS)
+  #    - Built from ./backend using the project Dockerfile
+  #    - All secrets loaded from .env file
+  #    - Waits for DB to be healthy before starting
+  #    - Healthcheck polls /api/health endpoint
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        # Build-time args for Prisma client generation
+        DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+        MASTER_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_MASTER_DB}?schema=public
+    container_name: inventory_backend
+    restart: unless-stopped
+    # ✅ Removed entrypoint/command overrides — let Dockerfile CMD handle startup
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      MASTER_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_MASTER_DB}?schema=public
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      PORT: ${BACKEND_PORT}
+      NODE_ENV: ${NODE_ENV:-production}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      AUTO_SEED_LOCAL: ${AUTO_SEED_LOCAL:-false}
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:${BACKEND_PORT}/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - inventory_network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  inventory_network:
+    driver: bridge
+    name: inventory_network

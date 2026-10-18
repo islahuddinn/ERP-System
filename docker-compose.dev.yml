@@ -1,0 +1,20 @@
+
+services:
+
+  db:
+    ports:
+      - "5434:5432"
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run start:dev
+    environment:
+      NODE_ENV: development
+    stdin_open: true
+    tty: true

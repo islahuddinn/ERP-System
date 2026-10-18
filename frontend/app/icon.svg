@@ -1,0 +1,9 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- White background with rounded corners -->
+  <rect width="32" height="32" fill="white" rx="6"/>
+  <!-- Logo area - this will be replaced when you generate PNG version -->
+  <!-- For now, this creates a white square favicon -->
+  <rect x="4" y="4" width="24" height="24" fill="white" rx="4"/>
+  <text x="16" y="20" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#10b981" text-anchor="middle">MT</text>
+</svg>
+
