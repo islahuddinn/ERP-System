@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scalable ERP — Data Flow Diagrams</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #059669;
+      --accent-soft: #ecfdf5;
+      --error: #b91c1c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 { margin: 0 0 0.25rem; font-size: 1.35rem; }
+    header p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: calc(100vh - 80px);
+    }
+    nav {
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      padding: 1rem 0.75rem;
+      overflow-y: auto;
+    }
+    nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 0.6rem 0.75rem;
+      margin-bottom: 0.35rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--text);
+    }
+    nav button:hover { background: var(--accent-soft); }
+    nav button.active {
+      background: var(--accent-soft);
+      border-color: #a7f3d0;
+      color: #047857;
+      font-weight: 600;
+    }
+    main { padding: 1.25rem 1.5rem 2rem; overflow: auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel h2 { margin: 0 0 0.35rem; font-size: 1.15rem; }
+    .panel .desc { color: var(--muted); font-size: 0.875rem; margin-bottom: 1rem; }
+    .diagram-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      min-height: 120px;
+    }
+    .diagram-mount {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+    .diagram-mount svg { max-width: 100%; height: auto; }
+    .diagram-loading { color: var(--muted); font-size: 0.875rem; text-align: center; padding: 2rem; }
+    .diagram-error {
+      color: var(--error);
+      font-size: 0.875rem;
+      padding: 1rem;
+      background: #fef2f2;
+      border-radius: 0.5rem;
+      white-space: pre-wrap;
+    }
+    .legend {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      nav { border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 0.35rem; }
+      nav button { width: auto; flex: 1 1 auto; min-width: 140px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Scalable ERP — Data Flow Diagrams</h1>
+    <p>Visual map of how data moves from tenant setup through procurement, production, distribution, sales, finance, and HR.</p>
+  </header>
+
+  <div class="layout">
+    <nav id="nav"></nav>
+    <main id="main"></main>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'neutral',
+      flowchart: { curve: 'basis', htmlLabels: true, padding: 16 },
+      securityLevel: 'loose',
+    });
+
+    const flows = [
+      {
+        id: 'master',
+        title: '1. Master end-to-end',
+        desc: 'Complete business lifecycle from empty tenant to cash collection.',
+        diagram: `flowchart TB
+  subgraph platform [Platform]
+    SA["Super Admin tenant"] --> Roles["Roles and permissions"]
+    Roles --> Login["User login JWT"]
+  end
+  subgraph masterdata [Master data]
+    Login --> MD["UOM Sites Products Suppliers Customers"]
+    MD --> Territory["Branches and pricing"]
+  end
+  subgraph procurement [Procurement]
+    Territory --> PO["Purchase order"]
+    PO --> GRN["GRN receive"]
+    GRN --> RMB[("Raw material batches")]
+    RMB --> QC["QC inspection"]
+    QC --> ACTIVE[("Active stock")]
+  end
+  subgraph production [Production]
+    ACTIVE --> BOM["BOM"]
+    BOM --> PROD["Production order"]
+    PROD --> FG[("Finished goods")]
+  end
+  subgraph distribution [Distribution]
+    FG --> BST["Branch stock transfer"]
+    BST --> BS[("Branch stock")]
+  end
+  subgraph salesflow [Sales]
+    BS --> SALE["Sale POS Delivery"]
+    SALE --> CL[("Customer ledger")]
+  end
+  subgraph financehr [Finance and HR]
+    GRN -.-> GL["General ledger"]
+    SALE -.-> AR["Accounts receivable"]
+    Login --> PAY["Payroll"]
+  end
+  Territory --> PO
+  FG --> BST
+  BS --> SALE`,
+      },
+      {
+        id: 'auth',
+        title: '2. Authentication',
+        desc: 'Login and tenant routing sequence.',
+        diagram: `sequenceDiagram
+  participant User
+  participant Web as Web App
+  participant API as NestJS API
+  participant Master as Master DB
+  participant Tenant as Tenant DB
+  User->>Web: email password tenantId
+  Web->>API: POST auth login
+  API->>Master: Resolve tenant
+  Master-->>API: Connection string
+  API->>Tenant: Validate user permissions
+  Tenant-->>API: User record
+  API-->>Web: JWT token
+  Web->>API: Bearer JWT on all requests
+  API->>Tenant: Read write data`,
+      },
+      {
+        id: 'masterdata',
+        title: '3. Master data setup',
+        desc: 'Required setup order before operations.',
+        diagram: `flowchart LR
+  A["Company settings"] --> B["UOMs"]
+  B --> C["Sites and warehouses"]
+  C --> D["Products and raw materials"]
+  D --> E["Suppliers and customers"]
+  E --> F["Territory and branches"]
+  F --> G["Price lists"]
+  G --> H["BOM recipes"]
+  H --> I["Plants and machines"]`,
+      },
+      {
+        id: 'procurement',
+        title: '4. Procurement to inventory',
+        desc: 'PO through GRN to usable raw material stock.',
+        diagram: `flowchart TB
+  S1["Supplier"] --> S2["PO DRAFT"]
+  S2 --> S3["PO CONFIRMED"]
+  S3 --> S4["GRN partial or full"]
+  S4 --> S5[("GRN record")]
+  S4 --> S6[("RawMaterialBatch QUARANTINE")]
+  S4 --> S7[("PO receivedQty updated")]
+  S6 --> S8{"QC inspection"}
+  S8 -->|PASS| S9[("Batch ACTIVE")]
+  S8 -->|FAIL| S10[("Batch BLOCKED")]
+  S9 --> S11["FIFO production consume"]
+  S4 -.-> S12[("GL inventory optional")]`,
+      },
+      {
+        id: 'production',
+        title: '5. Production to stock',
+        desc: 'Manufacturing through WIP stages to sellable stock.',
+        diagram: `flowchart TB
+  B1["Active BOM"] --> B2["Production order DRAFT"]
+  B2 --> B3["IN_PROGRESS"]
+  B3 --> B4[("Consume raw batches")]
+  B3 --> B5[("ProductBatch WIP")]
+  B5 --> B6["Complete stages"]
+  B6 --> B7["Finalize batch"]
+  B7 --> B8[("Product currentStock up")]
+  B7 --> B9[("Stock ledger entry")]`,
+      },
+      {
+        id: 'internal',
+        title: '6. Internal material movement',
+        desc: 'Requests and transfers between sites.',
+        diagram: `flowchart LR
+  R1["Material request DRAFT"] --> R2["PENDING"]
+  R2 -->|Approved| R3["FULFILLED"]
+  R3 --> T1["Transfer PENDING"]
+  T1 --> T2["IN_TRANSIT"]
+  T2 --> T3["RECEIVED"]
+  T3 --> S1[("Source qty down")]
+  T3 --> S2[("Destination qty up")]`,
+      },
+      {
+        id: 'distribution',
+        title: '7. Factory to branch to customer',
+        desc: 'Distribution network and shop channel.',
+        diagram: `flowchart TB
+  FS[("Factory stock")] --> BSR["Branch stock request"]
+  BSR --> BST["Branch transfer DISPATCHED"]
+  BST --> BS[("Branch stock")]
+  BS --> CO["Customer order"]
+  CO --> CD["Delivery DELIVERED"]
+  CD --> CL[("Customer ledger")]
+  CD --> ST[("Stock decremented")]
+  CL --> REC["Recovery payment"]
+  CO --> RET["Return optional"]`,
+      },
+      {
+        id: 'sales',
+        title: '8. Sales and POS',
+        desc: 'Direct sales and point-of-sale paths.',
+        diagram: `flowchart TB
+  subgraph salesOrder [Sales order]
+    A1["Create sale"] --> A2["Deduct stock"]
+    A2 --> A3["Dispatch"]
+    A3 --> A4["Customer ledger"]
+  end
+  subgraph posChannel [POS]
+    P1["Select location"] --> P2["Add items and pay"]
+    P2 --> P3[("Stock down immediately")]
+    P2 --> P4[("Receipt and cash drawer")]
+    P2 -.-> P5[("GL revenue optional")]
+  end`,
+      },
+      {
+        id: 'finance',
+        title: '9. Finance and GL',
+        desc: 'How operational events connect to accounting.',
+        diagram: `flowchart TB
+  COA["Chart of accounts"] --> JE["Journal entries"]
+  GRN["GRN receipt"] -.-> AP1["Dr Inventory Cr AP"]
+  VB["Vendor bill"] --> AP2["AP liability"]
+  VP["Vendor payment"] --> AP3["Cash out"]
+  INV["AR invoice"] --> AR1["Receivable"]
+  RP["AR payment"] --> AR2["Cash in"]
+  EXP["Expense"] --> GL1["Expense journal"]
+  PAY["Payroll PAID"] --> GL2["Payroll journal"]
+  AP1 --> TB["Trial balance"]
+  AP3 --> TB
+  AR1 --> TB
+  GL1 --> TB
+  TB --> PL["Profit and Loss and Balance sheet"]`,
+      },
+      {
+        id: 'hr',
+        title: '10. HR and payroll',
+        desc: 'Employee lifecycle through payroll payment.',
+        diagram: `flowchart LR
+  E1["Employee and contract"] --> A1["Attendance"]
+  E1 --> L1["Leave requests"]
+  A1 --> P1["Payroll DRAFT"]
+  L1 --> P1
+  LOAN["Employee loan"] --> P1
+  P1 --> P2["APPROVED"]
+  P2 --> P3["PAID"]
+  P3 --> P4[("Loan installment paid")]
+  P3 -.-> P5[("GL salary optional")]`,
+      },
+      {
+        id: 'stock',
+        title: '11. Stock ledger events',
+        desc: 'Which events update inventory balances.',
+        diagram: `flowchart TB
+  subgraph stockEvents [Inventory events]
+    E1["GRN"] --> RM["RawMaterial stock"]
+    E2["Production consume"] --> RM
+    E3["Finalize product batch"] --> PR["Product stock"]
+    E4["Sale POS delivery"] --> PR
+    E5["Branch transfer"] --> BSB["Branch stock"]
+    E6["Returns"] --> PR
+  end
+  E1 --> SL["StockLedger audit"]
+  E2 --> RMC["Batch consumption log"]`,
+      },
+    ];
+
+    const nav = document.getElementById('nav');
+    const main = document.getElementById('main');
+    const rendered = new Set();
+
+    flows.forEach((flow, index) => {
+      const btn = document.createElement('button');
+      btn.textContent = flow.title;
+      btn.dataset.id = flow.id;
+      if (index === 0) btn.classList.add('active');
+      btn.addEventListener('click', () => showPanel(flow.id));
+      nav.appendChild(btn);
+
+      const panel = document.createElement('section');
+      panel.className = 'panel' + (index === 0 ? ' active' : '');
+      panel.id = 'panel-' + flow.id;
+      panel.innerHTML = `
+        <h2>${flow.title}</h2>
+        <p class="desc">${flow.desc}</p>
+        <div class="diagram-card">
+          <div class="diagram-mount" id="mount-${flow.id}">
+            <p class="diagram-loading">Loading diagram…</p>
+          </div>
+        </div>
+        <p class="legend">Source: docs/DATA_FLOW_DIAGRAMS.md · Rendered with Mermaid</p>
+      `;
+      main.appendChild(panel);
+    });
+
+    async function renderDiagram(id) {
+      if (rendered.has(id)) return;
+      const flow = flows.find((f) => f.id === id);
+      const mount = document.getElementById('mount-' + id);
+      if (!flow || !mount) return;
+
+      try {
+        const renderId = 'mermaid-svg-' + id;
+        const { svg } = await mermaid.render(renderId, flow.diagram.trim());
+        mount.innerHTML = svg;
+        rendered.add(id);
+      } catch (err) {
+        console.error('Mermaid render failed for', id, err);
+        mount.innerHTML =
+          '<div class="diagram-error">Could not render this diagram. ' +
+          (err.message || String(err)) +
+          '</div>';
+      }
+    }
+
+    async function showPanel(id) {
+      document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach((b) => b.classList.remove('active'));
+      document.getElementById('panel-' + id).classList.add('active');
+      document.querySelector(`nav button[data-id="${id}"]`).classList.add('active');
+      await renderDiagram(id);
+    }
+
+    showPanel(flows[0].id);
+  </script>
+</body>
+</html>

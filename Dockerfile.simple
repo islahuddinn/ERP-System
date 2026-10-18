@@ -1,0 +1,39 @@
+# Simplified Dockerfile for Railway
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
+
+# Copy package files
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+
+# Install dependencies
+RUN npm ci --legacy-peer-deps
+RUN cd backend && npm ci --legacy-peer-deps
+
+# Copy source code
+COPY backend ./backend
+
+# Build the application
+WORKDIR /app/backend
+RUN npm run build
+
+# Production stage
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Copy built application
+COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/backend/prisma ./prisma
+COPY --from=builder /app/backend/package*.json ./
+COPY --from=builder /app/backend/node_modules ./node_modules
+
+EXPOSE 8080
+
+CMD ["node", "dist/main.js"]

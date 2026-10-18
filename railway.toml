@@ -1,0 +1,10 @@
+[build]
+dockerfile = "Dockerfile"
+
+[deploy]
+preDeploy = "npm run tenant:deploy"
+startCommand = "sh -c 'export PRISMA_CLIENT_ENGINE_TYPE=binary && node dist/main.js'"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

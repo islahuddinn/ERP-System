@@ -1,0 +1,13 @@
+{
+  "name": "tenant-fix-server",
+  "version": "1.0.0",
+  "description": "Temporary server to fix tenant issue",
+  "main": "standalone-fix-server.js",
+  "scripts": {
+    "start": "node standalone-fix-server.js"
+  },
+  "dependencies": {
+    "@prisma/tenant-client": "^5.0.0",
+    "express": "^4.18.0"
+  }
+}
